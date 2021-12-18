@@ -7,6 +7,11 @@ spring:
     password: admin
     virtual-host: /
     port: 5672
+    publisher-returns: true
+    publisher-confirm-type: correlated
+    listener:
+      simple:
+        acknowledge-mode: manual
 
 server:
   port: 8088

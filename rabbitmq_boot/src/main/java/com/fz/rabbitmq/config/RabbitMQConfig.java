@@ -1,9 +1,17 @@
 package com.fz.rabbitmq.config;
 
+import com.rabbitmq.client.ConfirmCallback;
+import com.rabbitmq.client.Return;
+import com.rabbitmq.client.ReturnCallback;
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.HashMap;
 
 /**
@@ -13,7 +21,10 @@ import java.util.HashMap;
  */
 
 @Configuration
-public class RabbitMQConfig {
+public class RabbitMQConfig implements RabbitTemplate.ConfirmCallback,RabbitTemplate.ReturnCallback {
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Bean
     public FanoutExchange fanoutExchange() {
@@ -67,5 +78,51 @@ public class RabbitMQConfig {
 
     public Binding topicBindingEmail() {
         return BindingBuilder.bind(emailQueue()).to(topicExchange()).with("#.email");
+    }
+
+
+    @PostConstruct
+    public void init(){
+        rabbitTemplate.setConfirmCallback(this);            //指定 ConfirmCallback
+        /**
+         * true：交换机无法将消息进行路由时，会将该消息返回给生产者
+         * false：如果发现消息无法进行路由，则直接丢弃
+         */
+        rabbitTemplate.setMandatory(true);
+        rabbitTemplate.setReturnCallback(this);             //指定 ReturnCallback
+    }
+
+
+    /**
+     * 交换机不管是否收到消息的一个回调方法
+     *
+     * @param correlationData 消息相关数据
+     * @param ack             交换机是否收到消息
+     * @param cause           为收到消息的原因
+     */
+    @Override
+    public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+        System.out.println("消息唯一标识："+correlationData);
+        System.out.println("确认结果："+ack);
+        System.out.println("失败原因："+cause);
+    }
+
+
+    /**
+     * 当消息无法路由的时候的回调方法
+     * @param message 消息主体
+     * @param replyCode 消息代码
+     * @param replyText 描述
+     * @param exchange 消息使用的交换器
+     * @param routingKey 消息使用的路由键
+     */
+    @Override
+    public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
+        System.out.println("消息主体 message : "+message);
+        System.out.println("消息代码 message : "+replyCode);
+        System.out.println("描述："+replyText);
+        System.out.println("消息使用的交换器 exchange : "+exchange);
+        System.out.println("消息使用的路由键 routing : "+routingKey);
+
     }
 }

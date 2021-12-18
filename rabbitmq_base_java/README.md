@@ -437,4 +437,81 @@ TTL
 
 - 队列达到最大长度
 
-## 集群
+## 发布确认
+
+```
+spring.rabbitmq.publisher-confirm-type=correlated
+```
+
+- `NONE` 值是禁用发布确认模式，是默认值
+
+- `CORRELATED` 值是发布消息成功到交换器后会触发回调方法
+
+- `SIMPLE` 值经测试有两种效果，其一效果和 CORRELATED 值一样会触发回调方法，其二在发布消息成功后使用 rabbitTemplate 调用 waitForConfirms 或 waitForConfirmsOrDie 方法等待 broker 节点返回发送结果，根据返回结果来判定下一步的逻辑，要注意的点是 waitForConfirmsOrDie 方法如果返回 false 则会关闭 channel，则接下来无法发送消息到 broker;
+
+```java
+public class MyCallBack implements RabbitTemplate.ConfirmCallback
+    /**
+     * 交换机不管是否收到消息的一个回调方法
+     *
+     * @param correlationData 消息相关数据
+     * @param ack             交换机是否收到消息
+     * @param cause           为收到消息的原因
+     */
+    @Override
+    public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+        System.out.println("消息唯一标识："+correlationData);
+        System.out.println("确认结果："+ack);
+        System.out.println("失败原
+因："+cause);
+    }
+  rabbitTemplate.setConfirmCallback(MyCallBack);
+
+
+```
+
+## 
+
+## 回退消息
+
+**Mandatory** 参数
+
+```
+rabbitTemplate.setReturnsCallback(myCallBack);
+```
+
+在仅开启了生产者确认机制的情况下，交换机接收到消息后，会直接给消息生产者发送确认消息，如果发现该消息不可路由，那么消息会被直接丢弃，此时生产者是不知道消息被丢弃这个事件的。
+
+那么如何让无法被路由的消息帮我想办法处理一下？最起码通知我一声，我好自己处理啊。通过设置 mandatory 参数可以在当消息传递过程中不可达目的地时将消息返回给生产者。
+
+
+
+**修改配置**
+
+```
+#消息退回
+spring.rabbitmq.publisher-returns=true
+```
+
+```java
+public class MyCallBack implements RabbitTemplate.ReturnCallback
+    /**
+     * 当消息无法路由的时候的回调方法
+     * @param message 消息主体
+     * @param replyCode 消息代码
+     * @param replyText 描述
+     * @param exchange 消息使用的交换器
+     * @param routingKey 消息使用的路由键
+     */
+    @Override
+    public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
+        System.out.println("消息主体 message : "+message);
+        System.out.println("消息代码 message : "+replyCode);
+        System.out.println("描述："+replyText);
+        System.out.println("消息使用的交换器 exchange : "+exchange);
+        System.out.println("消息使用的路由键 routing : "
++routingKey);
+    }
+rabbitTemplate.setMandatory(true);
+        rabbitTemplate.setReturnCallback(MycallBack);             //指定 ReturnCallback
+```
