@@ -32,7 +32,12 @@ public class OrderService {
 
     public void makeOrderByTopic() {
         String orderId = UUID.randomUUID().toString();
-        rabbitTemplate.convertAndSend("topic_order_exchange", "sms.email", orderId);
+        // 设置某条消息TTL
+        rabbitTemplate.convertAndSend("topic_order_exchange", "sms.email", orderId, (message) -> {
+            message.getMessageProperties().setExpiration("5000");
+            message.getMessageProperties().setContentEncoding("UTF-8");
+            return message;
+        });
     }
 
 }
