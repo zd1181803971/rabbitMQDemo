@@ -1,4 +1,4 @@
-package com.dzu.rabbitmq.simple;
+package com.dzu.rabbitmq.all;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -8,12 +8,10 @@ import com.rabbitmq.client.ConnectionFactory;
 /**
  * @author Administrator
  * @date 2021/12/17 13:35
- * @description 简答模式 消费者
+ * @description 代码声明交换机和队列
  */
-public class Consumer {
+public class ProduceDeclare {
     public static void main(String[] args) {
-
-        // 所有的中间件技术都是基于TCP/IP协议基础之上构建新型的协议规范，只不过rabbitMQ使用的AMQP协议
 
         // 1、 创建连接工厂
         ConnectionFactory factory = new ConnectionFactory();
@@ -23,6 +21,7 @@ public class Consumer {
         factory.setPassword("admin");
         factory.setVirtualHost("/");
 
+
         Connection connection = null;
         Channel channel = null;
         try {
@@ -31,25 +30,35 @@ public class Consumer {
             // 3、通过链接获取通道Channel
             channel = connection.createChannel();
 
-            // 4、定义消息列
-            String queueName = "queue6";
+            // 4、准备消息内容
+            StringBuilder message = new StringBuilder("Hello rabbitMQ!");
 
-            // 声明交换机和队列既可以在生产者声明也可以在消费者声明，因为都是使用的通道
-//            channel.exchangeDeclare("exchange_test_zd", "fanout", true);
+            // 5、用代码声明一个交换机 ， 名称、类型、是否持久化（ broke重启交换机会不会丢失
+            String exchangeName = "direct_order_exchange";
+            channel.exchangeDeclare(exchangeName, "direct", true);
 
-            channel.basicConsume(queueName, true, (consumer, message) -> {
-                System.out.println("接收到的消息：");
-                System.out.println(consumer);
-                System.out.println(new String(message.getBody()));
-            }, (consumerTag) -> {
-                System.out.println("接受失败");
-                System.out.println(consumerTag);
-            });
+            // 6、声明队列
+            channel.queueDeclare("queue5", true, false, false, null);
+            channel.queueDeclare("queue6", true, false, false, null);
+            channel.queueDeclare("queue7", true, false, false, null);
 
-            System.out.println("consumer success");
+            // 7、 绑定
+            channel.queueBind("queue5", exchangeName, "order");
+            channel.queueBind("queue6", exchangeName, "order");
+            channel.queueBind("queue7", exchangeName, "message");
+
+            // 8、发布消息
+            for (int i = 0; i < 20; i++) {
+                message.append(i);
+                channel.basicPublish(exchangeName, "order", null, message.toString().getBytes());
+
+            }
+
+
+            System.out.println("direct schemas send success");
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
+        }finally {
             // 7、关闭链接
             if (channel != null && channel.isOpen()) {
                 try {

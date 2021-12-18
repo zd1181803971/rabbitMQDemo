@@ -232,6 +232,89 @@ public class Consumer {
 }
 ```
 
+##### 代码形式声明交换机和队列并进行绑定：
+
+```java
+package com.dzu.rabbitmq.all;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+
+/**
+ * @author Administrator
+ * @date 2021/12/17 13:35
+ * @description 代码声明交换机和队列
+ */
+public class ProduceDeclare {
+    public static void main(String[] args) {
+
+        // 1、 创建连接工厂
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("121.5.224.141");
+        factory.setPort(5672);
+        factory.setUsername("admin");
+        factory.setPassword("admin");
+        factory.setVirtualHost("/");
+
+
+        Connection connection = null;
+        Channel channel = null;
+        try {
+            // 2、创建链接Connection
+            connection = factory.newConnection("zdTest");
+            // 3、通过链接获取通道Channel
+            channel = connection.createChannel();
+
+            // 4、准备消息内容
+            String message = "Hello rabbitMQ!";
+
+            // 5、用代码声明一个交换机 ， 名称、类型、是否持久化（ broke重启交换机会不会丢失
+            String exchangeName = "direct_order_exchange";
+            channel.exchangeDeclare(exchangeName, "direct", true);
+
+            // 6、声明队列
+            channel.queueDeclare("queue5", true, false, false, null);
+            channel.queueDeclare("queue6", true, false, false, null);
+            channel.queueDeclare("queue7", true, false, false, null);
+
+            // 7、 绑定
+            channel.queueBind("queue5", exchangeName, "order");
+            channel.queueBind("queue6", exchangeName, "order");
+            channel.queueBind("queue7", exchangeName, "message");
+
+            // 8、发布消息
+            channel.basicPublish(exchangeName, "order", null, message.getBytes());
+
+
+            System.out.println("direct schemas send success");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            // 7、关闭链接
+            if (channel != null && channel.isOpen()) {
+                try {
+                    channel.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            // 8、关闭通道
+            if (connection != null && connection.isOpen()) {
+                try {
+                    connection.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+}
+
+```
+
 ## AMQP
 
 AMQP，即Advanced Message Queuing Protocol，一个提供统一消息服务的应用层标准高级消息队列协议，是应用层协议的一个开放标准，为面向消息的中间件设计。基于此协议的客户端与消息中间件可传递消息，并不受客户端/中间件不同产品，不同的开发语言等条件的限制。Erlang中的实现有RabbitMQ等。
@@ -269,3 +352,37 @@ AMQP，即Advanced Message Queuing Protocol，一个提供统一消息服务的�
 - headers
   
   - 通过headers来决定把消息发给哪些queue，用的比较少
+
+## 分发机制
+
+- 简单模式
+
+- 工作模式
+  
+  - 轮询 RoundRobin 
+  
+  - 公平
+    
+    - autoAck：false ->> 需要手动ack 可以确保消息真正成成功被消费
+    
+    - channel.basicQos(1);  同一时刻，broke只会推送一条消息给消费者 
+
+- 发布|订阅模式
+
+- 路由模式
+
+- 主题模式
+
+- RPC
+
+## 使用场景
+
+### 1、解耦、异步、晓峰
+
+- 同步异步的问题（串行）
+  
+  - 串行：将订单信息写入数据库成功后，发送注册邮件，再发送注册短信……所有任务执行完成后，返回给客户端。所需时间是所有服务总和。
+
+## 异常
+
+交换机和队列不存在都会抛出异常
