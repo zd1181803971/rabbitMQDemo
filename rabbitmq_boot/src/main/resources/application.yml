@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: rabbitmq-boot
+  rabbitmq:
+    host: 121.5.224.141
+    username: admin
+    password: admin
+    virtual-host: /
+    port: 5672
+
+server:
+  port: 8088
+
