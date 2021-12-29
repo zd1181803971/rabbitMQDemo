@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * @description rabbitmq_boot
  */
 
-@Component
+//@Component
 public class EmailConsumer3 {
 
     @RabbitListener(bindings = @QueueBinding(

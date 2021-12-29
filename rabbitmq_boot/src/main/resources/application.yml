@@ -2,7 +2,7 @@ spring:
   application:
     name: rabbitmq-boot
   rabbitmq:
-    host: 121.5.224.141
+    host: 172.19.119.17
     username: admin
     password: admin
     virtual-host: /
@@ -12,7 +12,11 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
+        retry:
+          enabled: true
+    template:
+      mandatory: true
 
 server:
-  port: 8088
+  port: 8988
 

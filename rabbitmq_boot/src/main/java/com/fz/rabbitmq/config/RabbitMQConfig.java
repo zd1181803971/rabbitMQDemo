@@ -6,6 +6,8 @@ import com.rabbitmq.client.ReturnCallback;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,15 +50,15 @@ public class RabbitMQConfig implements RabbitTemplate.ConfirmCallback,RabbitTemp
     @Bean
     public Queue smsQueue() {
         HashMap<String, Object> args = new HashMap<>();
-        // 对整个队列设置TTL（消息过期时间，               5000毫秒 （一般使用死信队列来接受）
-        args.put("x-message-ttl", 5000);
-        // 设置队列消息的最大个数
-        args.put("x-max-length", 5);
-        // 队列创建了之后，再修改其参数，会报错，需要删除队列重新创建
-        // 设置死信队列的交换机
-        args.put("x-dead-letter-exchange-message-ttl", "");
-        // 设置路由key，fanout模式不需要设置
-        args.put("x-dead-letter-routing-key", "");
+//        // 对整个队列设置TTL（消息过期时间，               5000毫秒 （一般使用死信队列来接受）
+//        args.put("x-message-ttl", 5000);
+//        // 设置队列消息的最大个数
+//        args.put("x-max-length", 5);
+//        // 队列创建了之后，再修改其参数，会报错，需要删除队列重新创建
+//        // 设置死信队列的交换机
+//        args.put("x-dead-letter-exchange-message-ttl", "");
+//        // 设置路由key，fanout模式不需要设置
+//        args.put("x-dead-letter-routing-key", "");
 
         return new Queue("sms.fanout.queue", true, false, false, args);
     }
@@ -76,6 +78,7 @@ public class RabbitMQConfig implements RabbitTemplate.ConfirmCallback,RabbitTemp
         return BindingBuilder.bind(smsQueue()).to(directExchange()).with("sms");
     }
 
+    @Bean
     public Binding topicBindingEmail() {
         return BindingBuilder.bind(emailQueue()).to(topicExchange()).with("#.email");
     }
@@ -90,6 +93,15 @@ public class RabbitMQConfig implements RabbitTemplate.ConfirmCallback,RabbitTemp
          */
         rabbitTemplate.setMandatory(true);
         rabbitTemplate.setReturnCallback(this);             //指定 ReturnCallback
+        rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+
+
+    }
+
+    @Bean
+    public MessageConverter messageConverter() {
+        // 可以序列化为json
+        return new Jackson2JsonMessageConverter();
     }
 
 

@@ -10,12 +10,12 @@ import org.springframework.stereotype.Component;
  * @description rabbitmq_boot
  */
 
-@RabbitListener(queues = "email.fanout.queue")
+//@RabbitListener(queues = "email.fanout.queue")
 @Component
 public class EmailConsumer2 {
 
     @RabbitHandler
-    public void reMessage(String message) {
+    public void reMessage(byte[] message) {
         System.out.println("EmailConsumer::::::::::::::");
         System.out.println(message);
     }

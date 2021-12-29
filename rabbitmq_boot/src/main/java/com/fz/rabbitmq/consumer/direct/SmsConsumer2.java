@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * @description rabbitmq_boot
  */
 
-@RabbitListener(queues = "sms.fanout.queue")
+//@RabbitListener(queues = "sms.fanout.queue")
 @Component
 public class SmsConsumer2 {
 
